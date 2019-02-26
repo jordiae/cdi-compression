@@ -20,7 +20,7 @@ máxima, max(L), que se pueden añadir y seguir siendo un código.
 
 '''
 
-def  kraft2(L, q=2):
+def kraft2(L, q=2):
     nwords = 0
     while kraft1(L,q):
         L.append(max(L))
@@ -34,8 +34,12 @@ de longitud Ln, que se pueden añadir y seguir siendo
 un código.
 '''
 
-def  kraft3(L, Ln, q=2):
-    pass
+def kraft3(L, Ln, q=2):
+	nwords = 0
+    while kraft1(L,q):
+        L.append(Ln)
+        nwords += 1
+    return nwords
 
 '''
 Dada la lista L de longitudes de las palabras de un  
@@ -43,7 +47,9 @@ código q-ario, hallar un código prefijo con palabras
 con dichas longitudes
 '''
 def Code(L,q=2):
-    pass
+	# Huffman
+	pass
+    
 #%%
 
 '''
