@@ -110,10 +110,6 @@ e2 = Encode(m2,m2c)
 d2 = Decode(e2,c2m)
 print(m2,'decodificado coincide con el original?',m2 == d2)
 
-
-# Da error porque el código no es prefijo y la decofificación es ambigua -> FAKE NEWS, no da error
-
-
 '''
 ¿Por qué da error?
 
@@ -121,8 +117,8 @@ print(m2,'decodificado coincide con el original?',m2 == d2)
 '''
 
 
-
-  
+# Daría error porque el código no es prefijo y la decodificación es ambigua, pero con nuestra implementación basada en listas
+# no da error.
 
 
 

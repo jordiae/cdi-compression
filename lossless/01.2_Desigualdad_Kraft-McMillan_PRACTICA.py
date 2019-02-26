@@ -8,9 +8,9 @@ Dada la lista L de longitudes de las palabras de un código
 q-ario, decidir si pueden definir un código.
 
 '''
-
+from functools import reduce
 def  kraft1(L, q=2):
-
+    return reduce(lambda x, y: x+pow(q,-y), L,0) <= 1
 
 
 '''
@@ -21,7 +21,11 @@ máxima, max(L), que se pueden añadir y seguir siendo un código.
 '''
 
 def  kraft2(L, q=2):
-
+    nwords = 0
+    while kraft1(L,q):
+        L.append(max(L))
+        nwords += 1
+    return nwords
 
 '''
 Dada la lista L de longitudes de las palabras de un  
@@ -31,7 +35,7 @@ un código.
 '''
 
 def  kraft3(L, Ln, q=2):
-
+    pass
 
 '''
 Dada la lista L de longitudes de las palabras de un  
@@ -39,7 +43,7 @@ código q-ario, hallar un código prefijo con palabras
 con dichas longitudes
 '''
 def Code(L,q=2):
-
+    pass
 #%%
 
 '''
