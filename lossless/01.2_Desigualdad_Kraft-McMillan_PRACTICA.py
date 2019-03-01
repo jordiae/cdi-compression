@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# Jordi Armengol Estapé
+# Bruno Tamborero Serrano
+
 """
 
 """
@@ -35,7 +39,7 @@ un código.
 '''
 
 def kraft3(L, Ln, q=2):
-	nwords = 0
+    nwords = 0
     while kraft1(L,q):
         L.append(Ln)
         nwords += 1
@@ -46,11 +50,23 @@ Dada la lista L de longitudes de las palabras de un
 código q-ario, hallar un código prefijo con palabras 
 con dichas longitudes
 '''
+
+# Nota: hemos hecho que la propuesta deel RFC 1951 funcione para una q arbitraria
 from collections import Counter
 def Code(L,q=2):
     # Huffman canonical code, RFC 1951
-    assert kraft1(L,q)
-    def Code(L,q=2):
+    #assert kraft1(L,q)
+    def format_int_in_base(number, base, length):
+        if number == 0:
+            return '0'*length
+        digits = []
+        while number > 0:
+            digits.append(int(number % base))
+            number //= base
+        res = ''.join(str(e) for e in digits[::-1])
+        if len(res) > length:
+            res = '0'*(len(res) - length) + res
+        return res
     bl_count = Counter(L)
     code = 0
     bl_count[0] = 0
@@ -66,7 +82,8 @@ def Code(L,q=2):
         def_code.append(next_code[length])
         lengths[next_code[length]] = length
         next_code[length] += 1
-    def_code = list(map(lambda x: format(x,'0'+str(lengths[x])+'b'),def_code))
+    #def_code = list(map(lambda x: format(x,'0'+str(lengths[x])+'b'),def_code))
+    def_code = list(map(lambda x: format_int_in_base(x,q,lengths[x]),def_code))
     return def_code   
 #%%
 
