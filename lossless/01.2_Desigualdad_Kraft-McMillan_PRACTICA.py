@@ -46,10 +46,28 @@ Dada la lista L de longitudes de las palabras de un
 código q-ario, hallar un código prefijo con palabras 
 con dichas longitudes
 '''
+from collections import Counter
 def Code(L,q=2):
-	# Huffman
-	pass
-    
+    # Huffman canonical code, RFC 1951
+    assert kraft1(L,q)
+    def Code(L,q=2):
+    bl_count = Counter(L)
+    code = 0
+    bl_count[0] = 0
+    L_sorted = sorted(L)
+    next_code = {}
+    for l in range(0,L_sorted[-1]+1):
+        code = (code + bl_count[l-1])*q
+        next_code[l] = code
+    def_code = []
+    lengths = {}
+    for l in L_sorted:
+        length = l
+        def_code.append(next_code[length])
+        lengths[next_code[length]] = length
+        next_code[length] += 1
+    def_code = list(map(lambda x: format(x,'0'+str(lengths[x])+'b'),def_code))
+    return def_code   
 #%%
 
 '''
