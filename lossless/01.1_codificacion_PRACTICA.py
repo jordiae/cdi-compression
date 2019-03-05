@@ -1,4 +1,14 @@
+#!/usr/bin/python3.6
 # -*- coding: utf-8 -*-
+
+# Jordi Armengol Estapé
+# Bruno Tamborero Serrano
+# Nota: para ejecutar este script es necesario Python3.6, que está disponible en los ordenadores de la FIB (python3.6).
+
+import sys
+
+if float(str(sys.version_info[0])+'.'+str(sys.version_info[1])) < 3.6:
+    raise Exception("Nota: para ejecutar este script es necesario Python3.6, que está disponible en los ordenadores de la FIB (python3.6)")
 
 import random
 

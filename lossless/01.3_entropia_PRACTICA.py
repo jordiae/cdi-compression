@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# Jordi Armengol Estapé
+# Bruno Tamborero Serrano
+
 """
 
 """
