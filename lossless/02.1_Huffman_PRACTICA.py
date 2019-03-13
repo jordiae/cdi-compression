@@ -26,17 +26,117 @@ def nMinAndIndex(n,l):
                 break
     return cs
 
+def Huffman2(p):
+    import math
+    codigo = []
+    ps = sorted(p)
+    prefix = int(math.log2(len(p)+1)-1) * '1'
+    while len(ps) > 2:
+        ps.append(ps[0]+ps[1])
+        del(ps[0])
+        del(ps[0])
+        ps.sort()
+        codigo.append(prefix+'1')
+        prefix = prefix[:-1]
+        codigo.append(prefix+'0')
+        
+    codigo.append(prefix+'0')
+    if len(ps) == 1:
+        codigo.append(prefix+'1')
+    return sorted(codigo)
+from pprint import pprint
+def dicts(t): return {k: dicts(t[k]) for k in t}
+def Huffmant(p):
+    import collections
+
+    def Tree():
+        return collections.defaultdict(Tree)
+    t = Tree()
+    ps = sorted(p)
+    while len(ps) > 1:
+
+        
+        ps.append(ps[0]+ps[1])
+   
+        new_tree = Tree()
+        new_tree[0] = ps[0]
+        new_tree[1] = ps[1]
+        #print(new_tree)
+        
+        if len(t) == 0:
+            t = new_tree
+        else:
+            '''
+            new_tree2 = Tree()
+            pprint(t[1])
+            #input()
+            new_tree2[0] = t[1]#.copy()
+            new_tree2[1] = new_tree
+            t[1] = new_tree2
+            '''
+            new_tree2 = Tree()
+            new_tree2[1] = t
+            new_tree2[0] = ps[0]
+            t = new_tree2
+
+        #print(new_tree2)
+        del(ps[0])
+        del(ps[0])
+        ps.sort()
+        #input()
+        #print(t)
+        #input()
+    t[0] = ps[0]
+    
+    '''
+    def traverse_tree(tree):
+        if isinstance(tree[0],float):
+            print(tree[0])
+        if 1 in tree and isinstance(tree[1],float):
+            print(tree[1])
+        print()
+        traverse_tree(tree[0])
+        if 1 in tree:
+            traverse_tree(tree[1])
+    traverse_tree(t)
+    '''
+    def traverse_tree(tree,prefix=''):
+        for key,value in tree.items():
+            #print(type(value))
+            if isinstance(value,collections.defaultdict):
+                #print('aefsafg')
+                traverse_tree(value,prefix+'1')
+            else:
+                print(prefix+str(key))
+                #print(value)
+    def traverse_tree3(tree,prefix=''):
+        if 0 in tree and isinstance(tree[0],collections.defaultdict):
+            traverse_tree3(tree[0],prefix+'0')
+        elif 0 in tree:
+            print(prefix+'0')
+        if 1 in tree and isinstance(tree[1],collections.defaultdict):
+            traverse_tree3(tree[1],prefix+'1')
+        elif 1 in tree:
+            print(prefix+'1')
+    print(t)
+    traverse_tree3(t)
+    
+    
+
 def Huffman(p):
+    import math
     even = len(p) // 2 == 0 
     p = p.copy()
     i = 0
     codigo = []
-    prefix = int(math.log2(4)) * '1'
+    #prefix = int(math.log2(len(p)-1)) * '1'
+    prefix = int(math.log2(len(p)+1)-1) * '1'
     base = True
     while len(p) > 0:
         min_ps = nMinAndIndex(2,p)
         del p[min_ps[0][1]]
         if min_ps[1][0] == float('inf'):
+            #pass
             return codigo
         del p[min_ps[1][1]-1]
         p.append(min_ps[0][0] + min_ps[1][0])
@@ -45,12 +145,26 @@ def Huffman(p):
             base = False
         codigo.append(prefix + '0')
         prefix = prefix[:-1]
+        '''
         print(codigo)
         print(prefix)
         print(p)
         input()
+        '''
     return codigo
-Huffman(p)
+'''
+def Huffman3(p):
+    import collections
+
+    def Tree():
+        return collections.defaultdict(Tree)
+
+    t = Tree()
+    ps = sorted(p)
+    while len(ps) > 1:
+        e1 = ps[0]
+        e2 = ps[1]
+'''
 '''
 def Huffman(p):
     sorted_p = sorted(p,reverse=True)
@@ -103,8 +217,14 @@ p=[1/n for _ in range(n)]
 Dado un mensaje hallar la tabla de frecuencia de los caracteres que lo componen
 '''
 def tablaFrecuencias(mensaje):
-    
-    return frecuencias
+    frecuencias = {}
+    for c in mensaje:
+        if c not in frecuencias:
+            frecuencias[c] = 1
+        else:
+            frecuencias[c] += 1
+    frecuencias = sorted(list(frecuencias.items()))
+    return [list(e) for e in frecuencias]
     
 
 """
@@ -126,8 +246,8 @@ anterior.
 '''
 
 def EncodeHuffman(mensaje_a_codificar):
-
-    return mensaje_codificado, m2c
+    pass
+    #return mensaje_codificado, m2c
     
     
 def DecodeHuffman(mensaje_codificado,m2c):
