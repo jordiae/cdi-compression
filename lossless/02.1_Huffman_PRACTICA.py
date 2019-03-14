@@ -75,8 +75,29 @@ Dada la ddp p=[1/n,..../1/n] con n=2**8, hallar un código de Huffman asociado,
 la entropía de p y la longitud media de código de Huffman hallado.
 '''
 
+
 n=2**8
 p=[1/n for _ in range(n)]
+CodigoHuffman = Huffman(p)
+print (CodigoHuffman)
+
+'''
+Dado un código C y una ddp p, hallar la longitud media del código.
+'''
+from functools import reduce
+def LongitudMedia(C,p):
+    return reduce(lambda x,y: x+len(y[0])*y[1],zip(C,p),0)  
+'''
+Dada una ddp p, hallar su entropía.
+'''
+
+import math
+def H1(p):
+    return -1*reduce(lambda x,y: x+y*(lambda z: 0 if z == 0 else math.log2(z))(y),p,0) 
+
+
+print (H1(p))
+print (LongitudMedia(CodigoHuffman,p))
 
 
 
@@ -118,13 +139,16 @@ anterior.
 '''
 
 def EncodeHuffman(mensaje_a_codificar):
-    pass
-    #return mensaje_codificado, m2c
+    m2c = Huffman(tablaFrecuencias(mensaje_a_codificar))
+    mensaje_codificado="";
+    for char in mensaje_a_codificar:
+        mensaje_codificado=mensaje_codificado+m2c[char]
+    return mensaje_codificado, m2c
     
     
 def DecodeHuffman(mensaje_codificado,m2c):
-
-    return mensaje_decodificado
+    pass
+    #return mensaje_decodificado
         
 
 """
