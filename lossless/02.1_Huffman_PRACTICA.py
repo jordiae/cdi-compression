@@ -11,52 +11,41 @@
 Dada una distribucion de probabilidad, hallar un código de Huffman asociado
 '''
 
+import collections
 
 def Huffman(p):
-    import collections
-
+    if p == [1]:
+        return ['0']
     def Tree():
         return collections.defaultdict(Tree)
-    t = Tree()
-    ps = sorted(p)
-    while len(ps) > 1:
-
-        
-        ps.append(ps[0]+ps[1])
-        if len(t) == 0:
-            new_tree = Tree()
-            new_tree[0] = ps[0]
-            new_tree[1] = ps[1]
-            t = new_tree
+    nodes = list(zip(sorted(p),[Tree()]*len(p)))
+    while len(nodes) > 1:
+        new_node = Tree()
+        new_node[0] = nodes[0]
+        new_node[1] = nodes[1]
+        nodes.append(tuple((nodes[0][0]+nodes[1][0],new_node)))
+        del(nodes[0])
+        del(nodes[0])
+        nodes.sort(key = lambda x: x[0])
+    t = nodes[0]
+    def traverse_tree(tree, prefix='', code=[]):
+        if 0 in tree[1]:
+            traverse_tree(tree[1][0],prefix+'0',code)
+        if 1 in tree[1]:
+            traverse_tree(tree[1][1],prefix+'1',code)
         else:
-            new_tree2 = Tree()
-            new_tree2[1] = t
-            new_tree2[0] = ps[0]
-            t = new_tree2
-
-        del(ps[0])
-        del(ps[0])
-        ps.sort()
-    t[0] = ps[0]
-    
-    def traverse_tree(tree,prefix='',code=[]):
-        if 0 in tree and isinstance(tree[0],collections.defaultdict):
-            traverse_tree(tree[0],prefix+'0',code)
-        elif 0 in tree:
-            code.append(prefix+'0')
-        if 1 in tree and isinstance(tree[1],collections.defaultdict):
-            traverse_tree(tree[1],prefix+'1',code)
-        elif 1 in tree:
-            code.append(prefix+'1')
+            code.append((prefix,tree[0]))
         return code
     code = traverse_tree(t)
-    ps = list(enumerate(p))
-    ps.sort(key=lambda x: x[1])
-    codigo = [None]*len(p)
-    i = len(code)-1
-    for e in ps:
-        codigo[e[0]] = code[i]
-        i -= 1
+    codigo = []
+    for e in p:
+        index_to_del = None
+        for index, value in enumerate(code):
+            if e == value[1]:
+                index_to_del = index
+                codigo.append(value[0])
+                break
+        del(code[index_to_del])
     return codigo
     
     
@@ -78,26 +67,22 @@ la entropía de p y la longitud media de código de Huffman hallado.
 
 n=2**8
 p=[1/n for _ in range(n)]
-CodigoHuffman = Huffman(p)
-print (CodigoHuffman)
+codigo = Huffman(p)
+print('Huffman:')
+print(codigo)
+print()
 
-'''
-Dado un código C y una ddp p, hallar la longitud media del código.
-'''
 from functools import reduce
 def LongitudMedia(C,p):
     return reduce(lambda x,y: x+len(y[0])*y[1],zip(C,p),0)  
-'''
-Dada una ddp p, hallar su entropía.
-'''
-
 import math
 def H1(p):
     return -1*reduce(lambda x,y: x+y*(lambda z: 0 if z == 0 else math.log2(z))(y),p,0) 
 
 
-print (H1(p))
-print (LongitudMedia(CodigoHuffman,p))
+print('Entropía:',H1(p))
+print('Longitud media del código:',LongitudMedia(codigo,p))
+# Sale entropía = longitud media
 
 
 
@@ -139,16 +124,31 @@ anterior.
 '''
 
 def EncodeHuffman(mensaje_a_codificar):
-    m2c = Huffman(tablaFrecuencias(mensaje_a_codificar))
-    mensaje_codificado="";
+    tabla_freq = tablaFrecuencias(mensaje_a_codificar)
+    chars = [item[0] for item in tabla_freq]
+    ps = [item[1] for item in tabla_freq]
+    total = sum(ps)
+    ps = list(map(lambda x: x/total,ps))
+    code = Huffman(ps)
+    m2c =  dict(zip(chars, code))
+    mensaje_codificado = ''
     for char in mensaje_a_codificar:
-        mensaje_codificado=mensaje_codificado+m2c[char]
+        mensaje_codificado = mensaje_codificado+m2c[char]
     return mensaje_codificado, m2c
     
     
 def DecodeHuffman(mensaje_codificado,m2c):
-    pass
-    #return mensaje_decodificado
+    c2m = {value: key for key, value in m2c.items()}
+    current_code = ''
+    i = 0
+    mensaje_decodificado = ''
+    while i < len(mensaje_codificado):
+        current_code += mensaje_codificado[i]
+        if current_code in c2m:
+            mensaje_decodificado += c2m[current_code]
+            current_code = ''
+        i += 1
+    return mensaje_decodificado
         
 
 """
@@ -170,10 +170,25 @@ mensaje_codificado='101101111101010000001100110010111010100111110101001111110100
 Si no tenemos en cuenta la memoria necesaria para almacenar el diccionario, 
 ¿cuál es la ratio de compresión?
 
+Respuesta:
+'''
+mensaje='La heroica ciudad dormía la siesta. El viento Sur, caliente y perezoso, empujaba las nubes blanquecinas que se rasgaban al correr hacia el Norte. En las calles no había más ruido que el rumor estridente de los remolinos de polvo, trapos, pajas y papeles que iban de arroyo en arroyo, de acera en acera, de esquina en esquina revolando y persiguiéndose, como mariposas que se buscan y huyen y que el aire envuelve en sus pliegues invisibles. Cual turbas de pilluelos, aquellas migajas de la basura, aquellas sobras de todo se juntaban en un montón, parábanse como dormidas un momento y brincaban de nuevo sobresaltadas, dispersándose, trepando unas por las paredes hasta los cristales temblorosos de los faroles, otras hasta los carteles de papel mal pegado a las esquinas, y había pluma que llegaba a un tercer piso, y arenilla que se incrustaba para días, o para años, en la vidriera de un escaparate, agarrada a un plomo. Vetusta, la muy noble y leal ciudad, corte en lejano siglo, hacía la digestión del cocido y de la olla podrida, y descansaba oyendo entre sueños el monótono y familiar zumbido de la campana de coro, que retumbaba allá en lo alto de la esbeltatorre en la Santa Basílica. La torre de la catedral, poema romántico de piedra,delicado himno, de dulces líneas de belleza muda y perenne, era obra del siglo diez y seis, aunque antes comenzada, de estilo gótico, pero, cabe decir, moderado por uninstinto de prudencia y armonía que modificaba las vulgares exageraciones de estaarquitectura. La vista no se fatigaba contemplando horas y horas aquel índice depiedra que señalaba al cielo; no era una de esas torres cuya aguja se quiebra desutil, más flacas que esbeltas, amaneradas, como señoritas cursis que aprietandemasiado el corsé; era maciza sin perder nada de su espiritual grandeza, y hasta sussegundos corredores, elegante balaustrada, subía como fuerte castillo, lanzándosedesde allí en pirámide de ángulo gracioso, inimitable en sus medidas y proporciones.Como haz de músculos y nervios la piedra enroscándose en la piedra trepaba a la altura, haciendo equilibrios de acróbata en el aire; y como prodigio de juegosmalabares, en una punta de caliza se mantenía, cual imantada, una bola grande debronce dorado, y encima otra más pequenya, y sobre ésta una cruz de hierro que acababaen pararrayos.'
+mensaje_codificado, m2c=EncodeHuffman(mensaje)
+print('mensaje == DecodeHuffman(mensaje_codificado,m2c)?', mensaje == DecodeHuffman(mensaje_codificado,m2c))
+
+print('Ratios de compresión:')
+# Contamos 8 bits (1 byte) por carácter
+print('Sin contar el diccionario:',8*len(mensaje)/len(mensaje_codificado)) # 1.8882442748091604
+
+'''
 Si tenemos en cuenta la memoria necesaria para almacenar el diccionario, 
 haz una estimación de la ratio de compresión.
 
 '''
+# La memoria para almacenar el diccionario se podría estimar multiplicando el número de elementos
+# por la suma de 8 bits (por cada carácter a codificar) y la longitud media de la codificación
+# (también se podría contar directamente para más precisión)
+print('Contando el diccionario:',(8*len(mensaje)/(len(mensaje_codificado)+ len(m2c) * (8 + LongitudMedia(Huffman(p),p))))) # 1.7700601087682473
 
 
 
