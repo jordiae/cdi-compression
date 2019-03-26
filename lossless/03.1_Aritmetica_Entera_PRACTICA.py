@@ -21,6 +21,7 @@ T: suma total de frecuencias
 """
 
 from itertools import accumulate
+from math import log2
 def IntegerArithmeticCode(mensaje,alfabeto,frecuencias):
     total = sum(frecuencias)
     probs = list(map(lambda x: x/total,frecuencias))
@@ -30,8 +31,25 @@ def IntegerArithmeticCode(mensaje,alfabeto,frecuencias):
         indice = indices[c]
         lower_bound = acumuladas[indice]
         upper_bound = acumuladas[indice+1]
+        if upper_bound < 0.5:
+            lower_bound *= 2
+            upper_bound *= 2
+        elif lower_bound >= 0.5 and upper_bound > 0.75:
+            lower_bound = 2*lower_bound - 1
+            upper_bound = 2*upper_bound - 1
+        else:
+            lower_bound = 2*lower_bound - 0.5
+            upper_bound = 2*upper_bound - 0.5
         acumuladas = list(map(lambda x: ((upper_bound-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound,acumuladas))
-    return acumuladas
+    m = acumuladas[indices[mensaje[-1]]]
+    M = acumuladas[indices[mensaje[-1]]+1]
+    t = int(-log2(M-m))
+    x_lower = int(2**t * m)
+    x_upper = int(2**t * M)
+    if x_lower != x_upper:
+        if x_lower % 2 == 0:
+            return '0' + "{0:b}".format(x_lower)
+    return '0' + "{0:b}".format(x_upper)
 
     
 #%%
@@ -44,8 +62,28 @@ dar el mensaje original
 """
            
 def IntegerArithmeticDecode(codigo,tamanyo_mensaje,alfabeto,frecuencias):
-
-    
+    total = sum(frecuencias)
+    probs = list(map(lambda x: x/total,frecuencias))
+    indices = dict(zip(alfabeto,sorted(range(len(frecuencias)), key=lambda k: frecuencias[k], reverse = True)))
+    acumuladas = [0] + list(accumulate(probs))
+    x = 0
+    cs = codigo[1:]
+    i = 1
+    for c in cs:
+        x += int(c) / (2**i)
+        i += 1
+    mensaje = ''
+    k = 0
+    while k < tamanyo_mensaje:
+        for i in range(0,len(acumuladas)):
+            if i == 0:
+                continue
+            if x < acumuladas[i]:
+                mensaje += alfabeto[i-1]
+                x = (x - acumuladas[i-1])/(acumuladas[i]-acumuladas[i-1])
+                break
+        k += 1
+    return mensaje
 
 
              
