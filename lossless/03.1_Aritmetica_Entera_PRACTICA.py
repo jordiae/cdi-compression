@@ -23,24 +23,38 @@ T: suma total de frecuencias
 from itertools import accumulate
 from math import log2
 def IntegerArithmeticCode(mensaje,alfabeto,frecuencias):
-    total = sum(frecuencias)
-    probs = list(map(lambda x: x/total,frecuencias))
+    T = sum(frecuencias)
+    R = 1
+    while R <= 4*T:
+        R *= 2
     indices = dict(zip(alfabeto,sorted(range(len(frecuencias)), key=lambda k: frecuencias[k], reverse = True)))
-    acumuladas = [0] + list(accumulate(probs))
+    acumuladas = [0] + list(accumulate(frecuencias))
+    #acumuladas = list(map(lambda x: x*R,acumuladas))
+    acumuladas = list(map(lambda x: int(((R-0)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + 0),acumuladas))
+    codigo = '0'
+    esperados = 1
     for c in mensaje:
+        print(acumuladas)
+        R = acumuladas[-1]
         indice = indices[c]
         lower_bound = acumuladas[indice]
         upper_bound = acumuladas[indice+1]
-        if upper_bound < 0.5:
+        if upper_bound < R/2:
             lower_bound *= 2
             upper_bound *= 2
-        elif lower_bound >= 0.5 and upper_bound > 0.75:
-            lower_bound = 2*lower_bound - 1
-            upper_bound = 2*upper_bound - 1
+            codigo += '0'*esperados
+            esperados = 1
+        elif lower_bound >= R/2 and upper_bound > (R/4)*3:
+            lower_bound = 2*lower_bound - R
+            upper_bound = 2*upper_bound - R
+            codigo += '1'*esperados
+            esperados = 1
         else:
-            lower_bound = 2*lower_bound - 0.5
-            upper_bound = 2*upper_bound - 0.5
-        acumuladas = list(map(lambda x: ((upper_bound-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound,acumuladas))
+            lower_bound = 2*lower_bound - R/2
+            upper_bound = 2*upper_bound - R/2
+            esperados += 1
+    return codigo
+        #acumuladas = list(map(lambda x: ((upper_bound-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound,acumuladas))
     m = acumuladas[indices[mensaje[-1]]]
     M = acumuladas[indices[mensaje[-1]]+1]
     t = int(-log2(M-m))
@@ -64,25 +78,39 @@ dar el mensaje original
 def IntegerArithmeticDecode(codigo,tamanyo_mensaje,alfabeto,frecuencias):
     total = sum(frecuencias)
     probs = list(map(lambda x: x/total,frecuencias))
-    indices = dict(zip(alfabeto,sorted(range(len(frecuencias)), key=lambda k: frecuencias[k], reverse = True)))
     acumuladas = [0] + list(accumulate(probs))
-    x = 0
-    cs = codigo[1:]
-    i = 1
-    for c in cs:
-        x += int(c) / (2**i)
-        i += 1
+    def str_to_float(s):
+        xx = 0
+        cs = codigo[1:]
+        i = 1
+        for c in cs:
+            xx += int(c) / (2**i)
+            i += 1
+        return xx
+    x = str_to_float(codigo)
     mensaje = ''
     k = 0
     while k < tamanyo_mensaje:
+        #print("Iteracio",k)
+        #print('Comencem amb x=',x,'i acumuladas =',acumuladas)
         for i in range(0,len(acumuladas)):
             if i == 0:
                 continue
             if x < acumuladas[i]:
                 mensaje += alfabeto[i-1]
                 x = (x - acumuladas[i-1])/(acumuladas[i]-acumuladas[i-1])
+                #print('x sense reescalar',x)
                 break
+        #lower_bound = acumuladas[i-1]
+        #upper_bound = acumuladas[i]
+        #x = (lambda y: ((upper_bound-lower_bound)*(y-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound)(x)
+        #print('x reescalada',x)
+        
+        #acumuladas = list(map(lambda x: ((upper_bound-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound,acumuladas))
+        #print(acumuladas)
+        #x = (x - acumuladas[i-1])/(acumuladas[i]-acumuladas[i-1])
         k += 1
+        input()
     return mensaje
 
 
@@ -105,11 +133,18 @@ anterior.
 
 
 def EncodeArithmetic(mensaje_a_codificar):
-
+    fuente = {}
+    for c in mensaje_a_codificar:
+        if c not in fuente:
+            fuente[c] = 1
+        else:
+            fuente[c] += 1
+    alfabeto, frecuencias = keys, values = fuente.keys(), fuente.values()
+    m, M = IntegerArithmeticCode(mensaje_a_codificar, frecuencias, alfabeto)
     return mensaje_codificado,alfabeto,frecuencias
     
 def DecodeArithmetic(mensaje_codificado,tamanyo_mensaje,alfabeto,frecuencias):
-
+    mensaje_decodificado = IntegerArithmeticDecode(mensaje_codificado,tamanyo_mensaje,alfabeto,frecuencias)
     return mensaje_decodificado
         
 #%%
