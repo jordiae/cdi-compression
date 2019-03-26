@@ -27,7 +27,8 @@ def IntegerArithmeticCode(mensaje,alfabeto,frecuencias):
     R = 1
     while R <= 4*T:
         R *= 2
-    indices = dict(zip(alfabeto,sorted(range(len(frecuencias)), key=lambda k: frecuencias[k], reverse = True)))
+    indices = dict(zip(alfabeto,sorted(range(len(frecuencias)), key=lambda k: frecuencias[k], reverse = False)))
+    print(indices)
     acumuladas = [0] + list(accumulate(frecuencias))
     #acumuladas = list(map(lambda x: x*R,acumuladas))
     acumuladas = list(map(lambda x: int(((R-0)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + 0),acumuladas))
@@ -35,24 +36,30 @@ def IntegerArithmeticCode(mensaje,alfabeto,frecuencias):
     esperados = 1
     for c in mensaje:
         print(acumuladas)
-        R = acumuladas[-1]
+        #R = acumuladas[-1]
         indice = indices[c]
         lower_bound = acumuladas[indice]
         upper_bound = acumuladas[indice+1]
+        print(indice,lower_bound,upper_bound)
         if upper_bound < R/2:
-            lower_bound *= 2
-            upper_bound *= 2
+            acumuladas = list(map(lambda x: x*2, acumuladas))
+            #lower_bound *= 2
+            #upper_bound *= 2
             codigo += '0'*esperados
             esperados = 1
         elif lower_bound >= R/2 and upper_bound > (R/4)*3:
-            lower_bound = 2*lower_bound - R
-            upper_bound = 2*upper_bound - R
+            acumuladas = list(map(lambda x: x*2-R, acumuladas))
+            #lower_bound = 2*lower_bound - R
+            #upper_bound = 2*upper_bound - R
             codigo += '1'*esperados
             esperados = 1
-        else:
-            lower_bound = 2*lower_bound - R/2
-            upper_bound = 2*upper_bound - R/2
+        elif lower_bound >= R/4 and upper_bound<= (R/4)*3:
+            acumuladas = list(map(lambda x: x*2-R/2, acumuladas))
+            #lower_bound = 2*lower_bound - R/2
+            #upper_bound = 2*upper_bound - R/2
             esperados += 1
+        else:
+            acumuladas = list(map(lambda x: int(((R-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound),acumuladas))
     return codigo
         #acumuladas = list(map(lambda x: ((upper_bound-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound,acumuladas))
     m = acumuladas[indices[mensaje[-1]]]
