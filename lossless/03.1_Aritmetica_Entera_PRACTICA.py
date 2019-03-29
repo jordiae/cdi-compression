@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 @author: martinez
+
+Jordi Armengol, Bruno Tamborero.
 """
 
 import math
-import random
+# ¿Se tenía que usar random? Estaba importado en el enunciado
+# import random
 
+from itertools import accumulate
 
 
 
@@ -20,58 +24,75 @@ T: suma total de frecuencias
 
 """
 
-from itertools import accumulate
-from math import log2
-def IntegerArithmeticCode(mensaje,alfabeto,frecuencias):
-    T = sum(frecuencias)
-    R = 1
-    while R <= 4*T:
-        R *= 2
-    indices = dict(zip(alfabeto,sorted(range(len(frecuencias)), key=lambda k: frecuencias[k], reverse = False)))
-    print(indices)
-    acumuladas = [0] + list(accumulate(frecuencias))
-    #acumuladas = list(map(lambda x: x*R,acumuladas))
-    acumuladas = list(map(lambda x: int(((R-0)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + 0),acumuladas))
-    codigo = '0'
-    esperados = 1
-    for c in mensaje:
-        print(acumuladas)
-        #R = acumuladas[-1]
-        indice = indices[c]
-        lower_bound = acumuladas[indice]
-        upper_bound = acumuladas[indice+1]
-        print(indice,lower_bound,upper_bound)
-        if upper_bound < R/2:
-            acumuladas = list(map(lambda x: x*2, acumuladas))
-            #lower_bound *= 2
-            #upper_bound *= 2
-            codigo += '0'*esperados
-            esperados = 1
-        elif lower_bound >= R/2 and upper_bound > (R/4)*3:
-            acumuladas = list(map(lambda x: x*2-R, acumuladas))
-            #lower_bound = 2*lower_bound - R
-            #upper_bound = 2*upper_bound - R
-            codigo += '1'*esperados
-            esperados = 1
-        elif lower_bound >= R/4 and upper_bound<= (R/4)*3:
-            acumuladas = list(map(lambda x: x*2-R/2, acumuladas))
-            #lower_bound = 2*lower_bound - R/2
-            #upper_bound = 2*upper_bound - R/2
-            esperados += 1
-        else:
-            acumuladas = list(map(lambda x: int(((R-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound),acumuladas))
-    return codigo
-        #acumuladas = list(map(lambda x: ((upper_bound-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound,acumuladas))
-    m = acumuladas[indices[mensaje[-1]]]
-    M = acumuladas[indices[mensaje[-1]]+1]
-    t = int(-log2(M-m))
-    x_lower = int(2**t * m)
-    x_upper = int(2**t * M)
-    if x_lower != x_upper:
-        if x_lower % 2 == 0:
-            return '0' + "{0:b}".format(x_lower)
-    return '0' + "{0:b}".format(x_upper)
+# Basado en https://people.cs.nctu.edu.tw/~cmliu/Courses/Compression/chap4.pdf
 
+def bitfield(n):
+    return [int(digit) for digit in bin(n)[2:]]
+
+def bitfield_to_dec(bit_array):
+    dec = 0
+    for i in range(len(bit_array)):
+        dec += bit_array[-(i+1)] * 2**i
+    return dec
+
+# Most significant bit equal
+def equal_msb(a, b):
+    return a[0] == b[0]
+
+def get_bitfields_lower_upper(lower_bound, upper_bound, nbits):
+    lower = bitfield(lower_bound)
+    upper = bitfield(upper_bound)
+    return (nbits-len(lower))*[0] + lower, (nbits-len(upper))*[0] + upper # para que tengan nbits
+
+def shift_left_and_set_lsb(bfield, bit):
+    length = len(bfield)
+    for i in range(1, len(bfield)):
+        bfield[i-1] = bfield[i]
+    bfield[length-1] = bit
+    return bfield
+
+def e3(lower, upper):
+    return lower[0:2] == [0, 1] and upper[0:2] == [1, 0]
+
+def IntegerArithmeticCode(mensaje,alfabeto,frecuencias):
+    codigo = ''
+    T = sum(frecuencias)
+    acumuladas = [0] + list(accumulate(frecuencias))
+    indices = dict(zip(alfabeto,range(len(frecuencias))))
+    k = int(math.log2(4*T)) + 1
+    R = 2**k
+    lower, upper = get_bitfields_lower_upper(0, R-1, k)
+    e3_counter  = 0
+    for c in mensaje:
+        decimal_lower_bound = bitfield_to_dec(lower)
+        decimal_upper_bound = bitfield_to_dec(upper)
+        indice = indices[c]
+        lower_c = acumuladas[indice]
+        upper_c = acumuladas[indice+1]
+        new_lower = decimal_lower_bound + ((decimal_upper_bound-decimal_lower_bound+1)*lower_c)//T
+        new_upper = decimal_lower_bound + ((decimal_upper_bound-decimal_lower_bound+1)*upper_c)//T - 1
+        lower, upper = get_bitfields_lower_upper(new_lower, new_upper, k)
+        while equal_msb(lower, upper) or e3(lower, upper):
+            if equal_msb(lower, upper): # escalado e1, e2
+                b = lower[0]
+                codigo += str(b) + e3_counter * str(1-b) # send b (+ los esperados por e3)
+                lower = shift_left_and_set_lsb(lower, 0)
+                upper = shift_left_and_set_lsb(upper, 1)
+                e3_counter = 0
+            if e3(lower, upper): # escalado e3
+                lower = shift_left_and_set_lsb(lower, 0)
+                upper = shift_left_and_set_lsb(upper, 1)
+                # complement
+                lower[0] = 1-lower[0]
+                upper[0] = 1-upper[0]
+                e3_counter += 1
+    for e in lower:
+        codigo += str(e) + e3_counter * str(1-e)
+        if e3_counter > 0:
+            e3_counter = 0
+    return codigo
+
+    
     
 #%%
             
@@ -83,42 +104,50 @@ dar el mensaje original
 """
            
 def IntegerArithmeticDecode(codigo,tamanyo_mensaje,alfabeto,frecuencias):
-    total = sum(frecuencias)
-    probs = list(map(lambda x: x/total,frecuencias))
-    acumuladas = [0] + list(accumulate(probs))
-    def str_to_float(s):
-        xx = 0
-        cs = codigo[1:]
-        i = 1
-        for c in cs:
-            xx += int(c) / (2**i)
-            i += 1
-        return xx
-    x = str_to_float(codigo)
     mensaje = ''
-    k = 0
-    while k < tamanyo_mensaje:
-        #print("Iteracio",k)
-        #print('Comencem amb x=',x,'i acumuladas =',acumuladas)
-        for i in range(0,len(acumuladas)):
-            if i == 0:
-                continue
-            if x < acumuladas[i]:
-                mensaje += alfabeto[i-1]
-                x = (x - acumuladas[i-1])/(acumuladas[i]-acumuladas[i-1])
-                #print('x sense reescalar',x)
-                break
-        #lower_bound = acumuladas[i-1]
-        #upper_bound = acumuladas[i]
-        #x = (lambda y: ((upper_bound-lower_bound)*(y-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound)(x)
-        #print('x reescalada',x)
-        
-        #acumuladas = list(map(lambda x: ((upper_bound-lower_bound)*(x-acumuladas[0]))/(acumuladas[len(acumuladas)-1]-acumuladas[0]) + lower_bound,acumuladas))
-        #print(acumuladas)
-        #x = (x - acumuladas[i-1])/(acumuladas[i]-acumuladas[i-1])
-        k += 1
-        input()
+    T = sum(frecuencias)
+    k = int(math.log2(4*T)) + 1
+    R = 2**k
+    acumuladas = list(accumulate(frecuencias))
+    lower = [0]*k
+    upper = [1]*k
+    c_k = k
+    t = []
+    for i in range(c_k):
+        t.append(int(codigo[i]))
+    while len(mensaje) < tamanyo_mensaje:
+        decimal_t = bitfield_to_dec(t)
+        decimal_lower_bound = bitfield_to_dec(lower)
+        decimal_upper_bound = bitfield_to_dec(upper)
+        j = 0
+        frec_acum = int(((decimal_t-decimal_lower_bound+1)*T-1)/(decimal_upper_bound-decimal_lower_bound+1))
+        while acumuladas[j] <= frec_acum:
+            j += 1
+        mensaje += alfabeto[j]
+        lower_c = 0 if j <= 0 else acumuladas[j-1]
+        upper_c = acumuladas[j]
+        new_lower = decimal_lower_bound + ((decimal_upper_bound-decimal_lower_bound+1)*lower_c)//T
+        new_upper = decimal_lower_bound + ((decimal_upper_bound-decimal_lower_bound+1)*upper_c)//T - 1
+        lower, upper = get_bitfields_lower_upper(new_lower, new_upper, k)
+        while equal_msb(lower, upper) or e3(lower, upper):
+            if equal_msb(lower, upper):
+                lower = shift_left_and_set_lsb(lower, 0)
+                upper = shift_left_and_set_lsb(upper, 1)
+                t = shift_left_and_set_lsb(t, int(codigo[c_k]))
+                c_k += 1
+            if e3(lower, upper):
+                lower = shift_left_and_set_lsb(lower, 0)
+                upper = shift_left_and_set_lsb(upper, 1)
+                t = shift_left_and_set_lsb(t, int(codigo[c_k]))
+                c_k += 1
+                # complement
+                lower[0] = 1-lower[0]
+                upper[0] = 1-upper[0]
+                t[0] = 1-t[0]
     return mensaje
+
+
+    
 
 
              
@@ -146,8 +175,8 @@ def EncodeArithmetic(mensaje_a_codificar):
             fuente[c] = 1
         else:
             fuente[c] += 1
-    alfabeto, frecuencias = keys, values = fuente.keys(), fuente.values()
-    m, M = IntegerArithmeticCode(mensaje_a_codificar, frecuencias, alfabeto)
+    alfabeto, frecuencias = list(fuente.keys()), list(fuente.values())
+    mensaje_codificado = IntegerArithmeticCode(mensaje_a_codificar, alfabeto, frecuencias)
     return mensaje_codificado,alfabeto,frecuencias
     
 def DecodeArithmetic(mensaje_codificado,tamanyo_mensaje,alfabeto,frecuencias):
