@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-
+# Jordi Armengol, Bruno Tamborero
 """
 Dado un mensaje dar su codificación  usando el
 algoritmo LZ78
@@ -56,7 +56,6 @@ def LZ78Decode(codigo):
       if c != 'EOF':
         output += c
     else:
-      #output += dic[n-1][1]
       aux = ''
       while dic[n-1][0] != 0:
         aux += dic[n-1][1]
