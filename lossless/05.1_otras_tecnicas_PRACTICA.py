@@ -70,9 +70,48 @@ def BWT(mensaje):
 		ultima_columna += fila[len(rotaciones) - 1]
 	return ultima_columna, posicion    
 
+# versión eficiente
+def BWT_eficiente(mensaje, k = 100):
+	if k > len(mensaje):
+		k = len(mensaje)
+	suffixes = []
+	mensaje_dup = mensaje * 2
+	l_dup = len(mensaje_dup)
+	for i in range(0, l_dup-k):
+		suffixes.append((i,mensaje_dup[i:i+k]))
+	# ordenar lexicográficamente (por el segundo elemento)
+	suffixes.sort(key = lambda x: x[1])
+	l = len(mensaje)
+	codigo = [None] * l
+	i = 0
+	for index, suffix in suffixes:
+		if index < l:
+			if index == 0:
+				posicion = i
+			codigo[i] = mensaje[index-1]
+			i += 1
+	return ''.join(codigo), posicion
 
-def BWT_eficiente(mensaje):
-	raise NotImplementedError
+
+'''
+# Versión sin k, pero obviamente peta por memoria.
+def BWT_algo_eficiente(mensaje):
+	suffixes = []
+	mensaje_dup = mensaje * 2
+	l_dup = len(mensaje_dup)
+	for i in range(0, l_dup):
+		suffixes.append((i,mensaje_dup[i:]))
+	# ordenar lexicográficamente (por el segundo elemento)
+	suffixes.sort(key = lambda x: x[1])
+	l = len(mensaje)
+	codigo = [None] * l
+	i = 0
+	for index, suffix in suffixes:
+		if index < l:
+			codigo[i] = mensaje[index-1]
+			i += 1
+	return ''.join(codigo)
+'''
 
 """
 1. Hallar la tabla de frecuencias asociada a los símbolos del 
@@ -112,6 +151,7 @@ def ejercicio1_aux(mensaje):
 	entropia = H2(columna(tabla_frecuencias,1))
 	print('Entropía:',entropia)
 def ejercicio1():
+	print('EJERCICIO 1')
 	print('Con la frase de ejemplo:')
 	mensaje='La heroica ciudad dormía la siesta. El viento Sur, caliente y perezoso, empujaba las nubes blanquecinas que se rasgaban al correr hacia el Norte.'
 	ejercicio1_aux(mensaje)
@@ -120,6 +160,7 @@ def ejercicio1():
 	with open('la_regenta.txt','r') as f:
 		mensaje = f.read()
 	ejercicio1_aux(mensaje)
+	print()
 	print()
 ejercicio1()
 """
@@ -153,30 +194,28 @@ def obtener_alfabeto(mensaje):
 def ejercicio2_aux(mensaje, verbose = False):
 	if verbose:
 		print('mensaje = ',mensaje)
-	print('Construyendo tabla de frecuencias...')
-	tabla_frecuencias = tablaFrecuencias(mensaje)
-	print('tabla_frecuencias = ', tabla_frecuencias)
-	print('Calculando entropía...')
-	entropia = H2(columna(tabla_frecuencias,1))
-	print('Entropía:',entropia)
 	print('Calculando BWT...')
-	bwt_mensaje = BWT(mensaje)[0]
+	bwt_mensaje = BWT_eficiente(mensaje)[0] # BWT(mensaje)[0]
 	if verbose:
 		print('BWT(mensaje)', bwt_mensaje)
 	#alfabeto=[' ', ',', '.', 'E', 'L', 'N', 'S', 'a', 'b', 'c', 'd', 'e', 'g', 'h', 'i', 'j', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'y', 'z', 'í']
 	print('Obteniendo alfabeto...')
 	alfabeto = obtener_alfabeto(mensaje)
-	print('alfabeto =', alfabeto)
+	if verbose:
+		print('alfabeto =', alfabeto)
 	print('Aplicando MtF...')
 	mtf_bwt_mensaje = MtFCode(bwt_mensaje, alfabeto)
-	print('MtFCode(BWT(mensaje),alfabeto)', mtf_bwt_mensaje)
+	if verbose:
+		print('MtFCode(BWT(mensaje),alfabeto)', mtf_bwt_mensaje)
 	print('Construyendo tabla de frecuencias...')
 	tabla_frecuencias = tablaFrecuencias(mtf_bwt_mensaje)
-	print('tabla_frecuencias = ', tabla_frecuencias)
+	if verbose:
+		print('tabla_frecuencias = ', tabla_frecuencias)
 	print('Calculando entropía...')
 	entropia = H2(columna(tabla_frecuencias,1))
 	print('Entropía:',entropia)
 def ejercicio2():
+	print('EJERCICIO 2')
 	print('Con la frase de ejemplo:')
 	mensaje='La heroica ciudad dormía la siesta. El viento Sur, caliente y perezoso, empujaba las nubes blanquecinas que se rasgaban al correr hacia el Norte.'
 	ejercicio2_aux(mensaje)
@@ -184,21 +223,16 @@ def ejercicio2():
 	print('Con el fichero entero (subconjuntos):')
 	with open('la_regenta.txt','r') as f:
 		mensaje = f.read()
-	print('Con 100 caracteres:')
-	ejercicio2_aux(mensaje[0:100])
+	print('Con 1000 caracteres:')
+	ejercicio2_aux(mensaje[0:1000])
 	print()
-	print('Con 200 caracteres:')
-	ejercicio2_aux(mensaje[0:200])
+	print('Con 10000 caracteres:')
+	ejercicio2_aux(mensaje[0:10000])
 	print()
-	print('Con 400 caracteres:')
-	ejercicio2_aux(mensaje[0:400])
-	print()
-	print('Con 600 caracteres:')
-	ejercicio2_aux(mensaje[0:600])
+	print('Con TODO el texto')
+	ejercicio2_aux(mensaje)
 	print()
 	print()
-	print('Observación: la entropía va subiendo, acercándose cada vez más a la entropía del texto completo original obtenida anteriormente.')
-	print('El coste no escala linealmente porque en Move to Front se calculan todas las rotaciones.')
-	print('La entropía cada vez sube menos.')
+	print('Observación: en el EJERCICIO 2 parece que la entropía va bajando, mientras que en el EJERCICIO 1 parece que va subiendo.')
 ejercicio2()
-BWT_eficiente('') # TODO (09/04/19)
+print('Nota: hemos hecho una versión eficiente de BWT, además de la original. Es eficiente en tiempo (tarda unos segundos) y en espacio (no peta por memoria).')
