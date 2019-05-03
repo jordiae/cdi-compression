@@ -62,6 +62,7 @@ def cuantizar(imagen, n_clusters):
     code, dist = vq(bloques, codebook)
     return code, codebook
 
+
 n_entradas = 512
 shape_bloques = (8, 8)
 code, codebook = cuantizar(imagen, n_entradas)
@@ -71,9 +72,15 @@ plt.figure()
 plt.imshow(imagenCuantizada, cmap=plt.cm.gray)
 plt.show()
 
-ratio_com = (n*m*8)/(512*8*8)
+n, m = imagen.shape
+bitsPorPixelOriginal = 8
+tam_dic = n_entradas * shape_bloques[0] * shape_bloques[1] * bitsPorPixelOriginal
+n_bloques = len(dividir(imagen))
+from math import log2
+ratio_com = (n*m*bitsPorPixelOriginal)/(tam_dic + n_bloques*log2(n_entradas))  # log2(n_entradas) -> para cada bloque, bits necesarios para saber a qué entrada corresponde el bloque
 Sigma = np.sqrt(sum(sum((imagen - imagenCuantizada) ** 2))) / (n * m)
-print('House:', 'ratio compresión =', ratio_com, 'Sigma =', Sigma)
+bitsPorPixel = (tam_dic + n_bloques*log2(n_entradas))/(n*m)
+print('House:', 'ratio compresión =', ratio_com, 'Sigma =', Sigma, 'bitsPorPixel', bitsPorPixel)
 
 """
 Hacer lo mismo con la imagen cameraman.png
@@ -92,9 +99,15 @@ plt.figure()
 plt.imshow(imagenCuantizadaCameraman, cmap=plt.cm.gray)
 plt.show()
 
-ratio_com = (n*m*8)/(512*8*8)
+n, m = cameraman.shape
+bitsPorPixelOriginal = 8
+tam_dic = n_entradas * shape_bloques[0] * shape_bloques[1] * bitsPorPixelOriginal
+n_bloques = len(dividir(cameraman))
+from math import log2
+ratio_com = (n*m*bitsPorPixelOriginal)/(tam_dic + n_bloques*log2(n_entradas))
+bitsPorPixel = (tam_dic + n_bloques*log2(n_entradas))/(n*m)
 Sigma = np.sqrt(sum(sum((cameraman - imagenCuantizadaCameraman) ** 2))) / (n * m)
-print('Cameraman:', 'ratio compresión =', ratio_com, 'Sigma =', Sigma)
+print('Cameraman:', 'ratio compresión =', ratio_com, 'Sigma =', Sigma, 'bitsPorPixel', bitsPorPixel)
 
 """
 Dibujar el resultado de codificar cameraman.png con el diccionarios obtenido
