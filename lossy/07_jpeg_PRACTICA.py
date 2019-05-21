@@ -81,51 +81,65 @@ def YUV2RGB(input):
 	return (R, G, B)
 
 '''
-
+from math import cos
 def rgb2yuv(pixel):
     R, G, B = pixel
     Y = int(0.299 * R + 0.587 * G + 0.114 * B + 0)
-	Cb = int(-0.169 * R + -0.334 * G + 0.500 * B + 128)
-	Cr = int(0.500 * R + -0.419 * G + -0.081 * B + 128)
+    Cb = int(-0.169 * R + -0.334 * G + 0.500 * B + 128)
+    Cr = int(0.500 * R + -0.419 * G + -0.081 * B + 128)
     return (Y, Cb, Cr)
 
-def dct(F):
+def dct(F, yuv, N):
     def C(k):
         if k == 0:
             return 1/math.sqrt(2)
         return 1
     for u in range(0, N):
         for v in range(0, N):
-            S = 0
+            S_y = 0
+            S_cb = 0
+            S_cr = 0
             for x in range(0, N):
-                s = 0
+                s_y = 0
+                s_cb = 0
+                s_cr = 0
                 for y in range(0, N):
-                    s += yuv[x,y]*math.cos((pi*(2*x + 1)*u)/(2*N))*cos((pi*(2*y+1)*v)/(2*N))
-                S += s
-            F[u,v] = (2/N) * C(u) * C(v) * S
+                    s_y += yuv[x, y][0]*math.cos((pi*(2*x + 1)*u)/(2*N))*cos((pi*(2*y+1)*v)/(2*N))
+                    s_cb += yuv[x, y][1] * math.cos((pi * (2 * x + 1) * u) / (2 * N)) * cos(
+                        (pi * (2 * y + 1) * v) / (2 * N))
+                    s_cr += yuv[x, y][2] * math.cos((pi * (2 * x + 1) * u) / (2 * N)) * cos(
+                        (pi * (2 * y + 1) * v) / (2 * N))
+                S_y += s_y
+                S_cb += s_cb
+                S_cr += s_cr
+            F[u, v][0] = (2/N) * C(u) * C(v) * S_y
+            F[u, v][1] = (2 / N) * C(u) * C(v) * S_cb
+            F[u, v][2] = (2 / N) * C(u) * C(v) * S_cr
     return F
 
-def quant(F):
-    Q = Q_matrix()
-    N, _ = F.shape
-    F = np.zeros(p.shape)
+def quant(F, N):
+    F = np.zeros((N, N, 3))
     for u in range(0, N):
         for v in range(0, N):
-            F[u,v] = round(F(u,v)/)
-
+            F[u,v][0] = round(F[u,v]/Q_Luminance[u,v])*Q_Luminance
+            F[u, v][1] = round(F[u, v] / Q_Chrominance[u, v]) * Q_Chrominance
+            F[u, v][2] = round(F[u, v] / Q_Chrominance[u, v]) * Q_Chrominance
+    return F
 def dct_bloque(p):
     Q = Q_matrix()
     N, _ = p.shape
     # 1: color. rgb -> yuv
     yuv = np.array(list(map(lambda row: map(lambda pixel: rgb2yuv(pixel), row), p)))
+    print(yuv.shape)
     # 2: DCT
-   
     F = np.zeros(p.shape)
-    F = dct(F)
+    F = dct(F, yuv, N)
     # 3: quantization
-    F = quant(F)
+    F = quant(F, N)
     return F
-            
+#dct_bloque(np.zeros((8,8)))
+#exit()
+# https://arxiv.org/pdf/1405.6147.pdf
 def idct_bloque(p):
     pass
 
@@ -150,8 +164,14 @@ Sigma=np.sqrt(sum(sum((imagen_gray-imagen_jpeg)**2)))/np.sqrt(sum(sum((imagen_gr
 
 
 """
-
+def dividir(array, n_rows_blocks=8, n_cols_blocks=8):
+    r, c, chanels = array.shape
+    b = (array.reshape(c // n_rows_blocks, n_rows_blocks, -1, n_cols_blocks).swapaxes(1, 2).reshape(-1, n_rows_blocks, n_cols_blocks).swapaxes(1, 2))
+    return b
 def jpeg_gris(imagen_gray):
+    bloques = dividir(imagen_gray)
+    for bloque in bloques:
+        bloque_trans = dct_bloque(bloque)
     pass
 
 
@@ -168,8 +188,30 @@ según los coeficientes nulos de la transformación:
 Sigma=np.sqrt(sum(sum((imagen_color-imagen_jpeg)**2)))/np.sqrt(sum(sum((imagen_color)**2)))
 
 """
+def dividir_3d(array, n_rows_blocks=8, n_cols_blocks=8):
+    r, c, channels = array.shape
+    new_array = array.reshape((r*c//(n_rows_blocks*n_cols_blocks), n_rows_blocks, n_cols_blocks, channels))
+    return new_array
+
+def reconstruir_3d(bloques):
+    a, b, c, d = bloques.shape
+    n_bloques = a
+    new_im = np.concatenate(bloques[0:n_bloques])
+    print(new_im.shape)
+    i = n_bloques
+    while i < len(bloques):
+        new_im = np.concatenate((new_im, np.concatenate(bloques[i:i+n_bloques])), axis=3)
+        i += n_bloques
+    return np.transpose(new_im)
 
 def jpeg_color(imagen_color):
+    #print(imagen_color.shape)
+    bloques = dividir_3d(imagen_color)
+    imagen_jpeg = np.zeros(imagen_color.shape)
+    for bloque in bloques:
+        bloque_trans = dct_bloque(bloque)
+
+    #print(bloques.shape)
     pass
 
 """
@@ -183,14 +225,14 @@ Imagen de GRISES
 ### .astype es para que lo lea como enteros de 32 bits, si no se
 ### pone lo lee como entero positivo sin signo de 8 bits uint8 y por ejemplo al 
 ### restar 128 puede devolver un valor positivo mayor que 128
-
+'''
 mandril_gray=scipy.ndimage.imread('mandril_gray.png').astype(np.int32)
 
 start= time.clock()
 mandril_jpeg=jpeg_gris(mandril_gray)
 end= time.clock()
 print("tiempo",(end-start))
-
+'''
 
 """
 #--------------------------------------------------------------------------
@@ -200,14 +242,14 @@ Imagen COLOR
 ## Aplico.astype pero después lo convertiré a 
 ## uint8 para dibujar y a int64 para calcular el error
 
-mandril_color=scipy.misc.imread('./mandril_color.png').astype(np.int32)
+mandril_color=scipy.misc.imread('../standard_test_images/mandril_color.png').astype(np.int32)
 
 
 
-start= time.clock()
-mandril_jpeg=jpeg_color(mandril_color)     
-end= time.clock()
-print("tiempo",(end-start))
+#start= time.clock()
+mandril_jpeg=jpeg_color(mandril_color)
+#end= time.clock()
+#print("tiempo",(end-start))
      
        
 
