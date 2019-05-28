@@ -166,7 +166,7 @@ def dct_bloque_gris(p):
     F = dct_gris(F, yuv, N)
     # 3: quantization
     FQ = quant_gris(F, N)
-    return F
+    return FQ
 
 
 
@@ -213,6 +213,24 @@ def idct_bloque_gris(p):
 Reproducir los bloques base de la transformación para los casos N=4,8
 Ver imágenes adjuntas.
 """
+
+def reproducir_bloques():
+    for N in [4, 8]:
+        plt.axis('off')
+        fig = plt.figure(figsize=(N*N+N+1, N*N+N+1))
+        for i in range(0, N):
+            for j in range(0, N):
+                M = np.zeros((N, N))
+                M[i, j] = 1
+                F = np.zeros((N, N))
+                #M_transform = scipy.fftpack.dct(M, norm='ortho')
+                M_transform = dct_bloque_gris(M)
+                fig.add_subplot(N, N, i*N + j + 1)
+                plt.imshow(M_transform, cmap=plt.cm.gray)
+                plt.axis('off')
+        plt.show()
+
+#reproducir_bloques()
 
 """
 Implementar la función jpeg_gris(imagen_gray) que: 
