@@ -81,13 +81,21 @@ def YUV2RGB(input):
 	return (R, G, B)
 
 '''
+import scipy.fftpack
 from math import cos
 def rgb2yuv(pixel):
     R, G, B = pixel
     Y = int(0.299 * R + 0.587 * G + 0.114 * B + 0)
     Cb = int(-0.169 * R + -0.334 * G + 0.500 * B + 128)
     Cr = int(0.500 * R + -0.419 * G + -0.081 * B + 128)
-    return (Y, Cb, Cr)
+    return np.array([Y, Cb, Cr])
+# https://www.chegg.com/homework-help/questions-and-answers/6-consider-yuv-rgb-color-format-conversion-1402-gl-l-1-034414-071414-u-128-v-128-11772-req-q37231191
+def yuv2rgb(pixel):
+    Y, U, V = pixel
+    R = int(1 * Y + 0 * (U-128) + 1.402 * (V-128))
+    G = int(1 * Y + -0.34414 * (U-128) -0.71414 * (V - 128))
+    B = int(1 * Y + 1.772 * (U - 128) + 0 * (V -128))
+    return np.array([R, G, B])
 
 def dct(F, yuv, N):
     def C(k):
@@ -96,6 +104,7 @@ def dct(F, yuv, N):
         return 1
     for u in range(0, N):
         for v in range(0, N):
+            '''
             S_y = 0
             S_cb = 0
             S_cr = 0
@@ -115,33 +124,56 @@ def dct(F, yuv, N):
             F[u, v][0] = (2/N) * C(u) * C(v) * S_y
             F[u, v][1] = (2 / N) * C(u) * C(v) * S_cb
             F[u, v][2] = (2 / N) * C(u) * C(v) * S_cr
+            '''
+            # versión eficiente. Dejamos comentamos nuestro código porque lo entendeos mejor
+            F[u,v] = scipy.fftpack.dct(yuv[u,v], norm='ortho')
     return F
 
 def quant(F, N):
-    F = np.zeros((N, N, 3))
+    FQ = np.zeros((N, N, 3))
     for u in range(0, N):
         for v in range(0, N):
-            F[u,v][0] = round(F[u,v]/Q_Luminance[u,v])*Q_Luminance
-            F[u, v][1] = round(F[u, v] / Q_Chrominance[u, v]) * Q_Chrominance
-            F[u, v][2] = round(F[u, v] / Q_Chrominance[u, v]) * Q_Chrominance
-    return F
+            FQ[u,v][0] = np.round(F[u,v,0]/Q_Luminance[u,v])*Q_Luminance[u,v]
+            FQ[u, v][1] = np.round(F[u,v,1] / Q_Chrominance[u, v]) * Q_Chrominance[u, v]
+            FQ[u, v][2] = np.round(F[u,v,2] / Q_Chrominance[u, v]) * Q_Chrominance[u, v]
+    return FQ
+
 def dct_bloque(p):
     Q = Q_matrix()
-    N, _ = p.shape
+    N, _, channels = p.shape
     # 1: color. rgb -> yuv
-    yuv = np.array(list(map(lambda row: map(lambda pixel: rgb2yuv(pixel), row), p)))
-    print(yuv.shape)
+    yuv = np.array(list(map(lambda row: [*map(lambda pixel: rgb2yuv(pixel), row)], p)))
     # 2: DCT
     F = np.zeros(p.shape)
     F = dct(F, yuv, N)
     # 3: quantization
-    F = quant(F, N)
+    FQ = quant(F, N)
     return F
 #dct_bloque(np.zeros((8,8)))
 #exit()
 # https://arxiv.org/pdf/1405.6147.pdf
+
+def idct(F, yuv, N):
+    def C(k):
+        if k == 0:
+            return 1/math.sqrt(2)
+        return 1
+    F_inv = np.zeros(F.shape)
+    for u in range(0, N):
+        for v in range(0, N):
+            F_inv[u, v] = scipy.fftpack.idct(yuv[u, v], norm='ortho')
+    return F_inv
 def idct_bloque(p):
-    pass
+    N, _, channels = p.shape
+    # 1: color. rgb -> yuv
+    #rgb = np.array(list(map(lambda row: [*map(lambda pixel: yuv2rgb(pixel), row)], p)))
+    # 2: DCT
+    F = np.zeros(p.shape)
+    F = idct(F, p, N)
+    rgb = np.array(list(map(lambda row: [*map(lambda pixel: yuv2rgb(pixel), row)], F)))
+    # 3: quantization
+    #FQ = quant(F, N)
+    return rgb
 
 
 """
@@ -195,24 +227,54 @@ def dividir_3d(array, n_rows_blocks=8, n_cols_blocks=8):
 
 def reconstruir_3d(bloques):
     a, b, c, d = bloques.shape
+    return bloques.reshape(a//b, a//c, d)
     n_bloques = a
-    new_im = np.concatenate(bloques[0:n_bloques])
-    print(new_im.shape)
+    new_im = np.concatenate(bloques[0:b*c])
+    #print(new_im.shape)
+    #return
     i = n_bloques
     while i < len(bloques):
         new_im = np.concatenate((new_im, np.concatenate(bloques[i:i+n_bloques])), axis=3)
         i += n_bloques
-    return np.transpose(new_im)
+    return new_im
 
-def jpeg_color(imagen_color):
-    #print(imagen_color.shape)
+def aplicar_jpeg_color(imagen_color):
+    print(imagen_color.shape)
     bloques = dividir_3d(imagen_color)
-    imagen_jpeg = np.zeros(imagen_color.shape)
-    for bloque in bloques:
+    print(bloques.shape)
+    #exit()
+    bloques_trans = np.zeros(bloques.shape)
+    for index, bloque in enumerate(bloques):
         bloque_trans = dct_bloque(bloque)
+        bloques_trans[index] = bloque_trans
+        print(index + 1, 'of', len(bloques))
+    x = reconstruir_3d(bloques_trans)
+    imagen_color = reconstruir_3d(bloques_trans)
+    print(imagen_color.shape)
+    #exit()
+    return imagen_color
+    # print(bloques.shape)
 
-    #print(bloques.shape)
-    pass
+def deaplicar_jpeg_color(comprimida):
+    bloques = dividir_3d(comprimida)
+    bloques_trans = np.zeros(bloques.shape)
+    for index, bloque in enumerate(bloques):
+        bloque_trans = idct_bloque(bloque)
+        bloques_trans[index] = bloque_trans
+        print(index + 1, 'of', len(bloques))
+    x = reconstruir_3d(bloques_trans)
+    imagen_color = reconstruir_3d(bloques_trans)
+    return imagen_color
+def jpeg_color(imagen_color):
+    comprimida = aplicar_jpeg_color(imagen_color)
+    plt.figure()
+    plt.imshow(comprimida)
+    plt.show()
+    descomprimida = deaplicar_jpeg_color(comprimida)
+    plt.figure()
+    plt.imshow(descomprimida.astype(np.uint8))
+    plt.show()
+    return comprimida
 
 """
 #--------------------------------------------------------------------------
