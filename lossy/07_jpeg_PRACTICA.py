@@ -144,6 +144,15 @@ def quant_gris(F, N):
     return FQ
 
 
+def iquant(F, N):
+    FQ = np.zeros((N, N, 3))
+    for u in range(0, N):
+        for v in range(0, N):
+            FQ[u, v][0] = np.round(F[u, v, 0] * Q_Luminance[u, v])
+            FQ[u, v][1] = np.round(F[u, v, 1] * Q_Chrominance[u, v])
+            FQ[u, v][2] = np.round(F[u, v, 2] * Q_Chrominance[u, v])
+    return FQ
+
 def dct_bloque(p):
     N, _, channels = p.shape
     # 1: color. rgb -> yuv
@@ -153,7 +162,7 @@ def dct_bloque(p):
     F = dct(F, yuv, N)
     # 3: quantization
     FQ = quant(F, N)
-    return F
+    return FQ
 
 
 def dct_bloque_gris(p):
@@ -191,6 +200,8 @@ def idct(F, yuv, N):
 
 def idct_bloque(p):
     N, _, channels = p.shape
+    #p.astype(np.uint8)
+    #p = iquant(p, N)
     # 1: IDCT
     F = np.zeros(p.shape)
     F = idct(F, p, N)
@@ -214,24 +225,28 @@ Reproducir los bloques base de la transformación para los casos N=4,8
 Ver imágenes adjuntas.
 """
 
+# https://users.cs.cf.ac.uk/Dave.Marshall/Multimedia/PDF/10_DCT.pdf
 def reproducir_bloques():
     for N in [4, 8]:
+        # para generar los bloques base:
+        # M = DCT a una matriz diagonal (y transponerla)
+        # para cada elemento (i,j), aplicamos tensordot
+        # de la respectiva fila
+        M = scipy.fftpack.dct(np.diag([1]*N), norm='ortho').T
         plt.axis('off')
         fig = plt.figure(figsize=(N*N+N+1, N*N+N+1))
         for i in range(0, N):
             for j in range(0, N):
-                M = np.zeros((N, N))
-                M[i, j] = 1
-                F = np.zeros((N, N))
-                #M_transform = scipy.fftpack.dct(M, norm='ortho')
-                M_transform = dct_bloque_gris(M)
+                #M = np.zeros((N, N))
+                #M[i, j] = 1
+                # M_transform = dct_bloque_gris(M.astype(np.uint8))
+                M_transform = np.tensordot(M[i], M[j], axes=0)
                 fig.add_subplot(N, N, i*N + j + 1)
                 plt.imshow(M_transform, cmap=plt.cm.gray)
                 plt.axis('off')
         plt.show()
 
 #reproducir_bloques()
-
 """
 Implementar la función jpeg_gris(imagen_gray) que: 
 1. dibuje el resultado de aplicar la DCT y la cuantización 
