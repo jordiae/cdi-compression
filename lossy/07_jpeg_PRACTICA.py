@@ -82,11 +82,6 @@ def yuv2rgb(pixel):
 
 def gray2yuv(pixel):
     return pixel - 128
-    R, G, B = [pixel] * 3
-    Y = int(0.299 * R + 0.587 * G + 0.114 * B + 0)
-    Cb = int(-0.169 * R + -0.334 * G + 0.500 * B + 128)
-    Cr = int(0.500 * R + -0.419 * G + -0.081 * B + 128)
-    return Y
 
 
 def yuv2gray(pixel):
