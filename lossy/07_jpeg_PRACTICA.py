@@ -274,6 +274,8 @@ def deaplicar_jpeg_gris(comprimida):
 
 
 def jpeg_gris(imagen_gray):
+    fila=len(imagen_gray)
+    columna=len(imagen_gray[0])
     comprimida = aplicar_jpeg_gris(imagen_gray)
     plt.figure()
     plt.imshow(comprimida, cmap=plt.cm.gray)
@@ -282,6 +284,13 @@ def jpeg_gris(imagen_gray):
     plt.figure()
     plt.imshow(descomprimida, cmap=plt.cm.gray)
     plt.show()
+    #haga una estimación de la ratio de compresión#según los coeficientes nulos de la transformación: (#coeficientes/#coeficientes no nulos).
+    coeficientesNulos = (comprimida== 0.).sum()
+    ratioCompresion = (fila*columna) / ((fila*columna) - coeficientesNulos)
+    #Haga una estimación del error para cada una de las componentes RGB
+    print('Ratio Compresión = '+ str(ratioCompresion))
+    Sigma=np.sqrt(sum(sum((imagen_gray-comprimida)**2)))/np.sqrt(sum(sum((imagen_gray)**2)))
+    print("Estimación del error imagen gris:",Sigma)
     return comprimida
 
 
@@ -336,6 +345,8 @@ def deaplicar_jpeg_color(comprimida):
 
 
 def jpeg_color(imagen_color):
+    fila=len(imagen_color)
+    columna=len(imagen_color[0])
     comprimida = aplicar_jpeg_color(imagen_color)
     plt.figure()
     plt.imshow(comprimida)
@@ -344,6 +355,18 @@ def jpeg_color(imagen_color):
     plt.figure()
     plt.imshow(descomprimida.astype(np.uint8))
     plt.show()
+    
+    imagen_jpeg = comprimida.astype(np.int64)
+    #haga una estimación de la ratio de compresión#según los coeficientes nulos de la transformación: (#coeficientes/#coeficientes no nulos).
+    coeficientesNulos = (0.0==comprimida[:,:,0].sum()) + (0.0==comprimida[:,:,1].sum()) + (0.0==comprimida[:,:,2].sum())
+    ratioCompresion = (fila*columna*3) / ((fila*columna*3) - coeficientesNulos)
+    #Haga una estimación del error para cada una de las componentes RGB
+    print('Ratio Compresión = '+ str(ratioCompresion))
+    
+    sigmaR =np.sqrt(sum(sum((imagen_color[:,:,0]-imagen_jpeg[:,:,0])**2)))/np.sqrt(sum(sum((imagen_color[:,:,0])**2)))
+    sigmaG =np.sqrt(sum(sum((imagen_color[:,:,1]-imagen_jpeg[:,:,1])**2)))/np.sqrt(sum(sum((imagen_color[:,:,1])**2)))
+    sigmaB =np.sqrt(sum(sum((imagen_color[:,:,2]-imagen_jpeg[:,:,2])**2)))/np.sqrt(sum(sum((imagen_color[:,:,2])**2)))
+    print("Estimación del error para cada una de las componentes RGB:",sigmaR,sigmaG,sigmaB)
     return comprimida
 
 
